@@ -137,6 +137,7 @@ vector<Mat> gray_codes_to_patterns(const vector<uint16_t>& codes, int height, in
             pat_inv.col(x).setTo(val);
         }
         patterns.push_back(pat_inv);
+        
     }
     return patterns;
 }

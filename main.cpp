@@ -32,11 +32,12 @@ int main()
     
 
 
-    for(int b=0,a=0;a<pat.size();b++,b++,a++)
+    for(int b=0,a=0;a<nbit;b++,b++,a++)
 {
     imwrite("enh_gray_" + to_string(nbit) + "bit_" + to_string(a) + ".bmp", pat[b]);
-    imwrite("enh_gray_inv_" + to_string(nbit) + "bit_" + to_string(a) + ".bmp", pat[b-1]);
+    imwrite("enh_gray_inv_" + to_string(nbit) + "bit_" + to_string(a) + ".bmp", pat[b+1]);
 }
+
 //*********************************************************************** */
     // Step1：构建增强格雷码映射表
     std::cout << "Building 10bit enhanced gray code table..." << std::endl;
