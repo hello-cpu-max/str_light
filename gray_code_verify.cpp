@@ -11,9 +11,9 @@
 // 配置区，和你的10bit增强格雷码论文对齐
 //=============================================
 const int BIT_NUM = 10;
-const int GLOBAL_THRESHOLD = 64;   // 固定全局阈值
+const int GLOBAL_THRESHOLD = 0;   // 固定全局阈值
 const int CODE_RANGE = 1 << BIT_NUM; // 1024
-const bool USE_INV_PATTERN = false;  // true=使用原图+反相图（论文方案）; false=只用原图
+const bool USE_INV_PATTERN = true;  // true=使用原图+反相图（论文方案）; false=只用原图
 const std::string IMG_PREFIX = "gray_";
 const std::string IMG_INV_PREFIX = "gray_inv_";
 

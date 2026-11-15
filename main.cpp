@@ -44,11 +44,13 @@ int main()
         std::string folder = "C:/Users/Lenovo/Desktop/gray/";
         std::string forename = "enh_gray_10bit_";
        // std::string name = folder + forename + std::to_string(b) + ".bmp";
-        std::string name = folder  + std::to_string(b) + ".bmp";
+        std::string name = folder  + "a" + std::to_string(b) + ".bmp";
         imgs[b] = read_gray_img(name);
         if(USE_INV_PATTERN)
         {
-            std::string inv_name = IMG_INV_PREFIX + std::to_string(b) + ".png";
+            std::string folder = "C:/Users/Lenovo/Desktop/gray/";
+            // std::string name = folder + forename + std::to_string(b) + ".bmp";
+        std::string inv_name = folder  + "b" + std::to_string(b) + ".bmp";
             imgs_inv[b] = read_gray_img(inv_name);
         }
     //     // ========== 新增：绘制并显示当前图直方图 ==========
@@ -79,11 +81,11 @@ int main()
                 {
                     uint8_t pix_inv = imgs_inv[b].at<uint8_t>(y,x);
                     int diff = pix - pix_inv;
-                    bit = (diff > GLOBAL_THRESHOLD);
+                    bit = (diff >= GLOBAL_THRESHOLD);
                 }
                 else
                 {
-                    bit = (pix > GLOBAL_THRESHOLD);
+                    bit = (pix >= GLOBAL_THRESHOLD);
                 }
                 if(bit) gray_val |= (1 << b);
             }
