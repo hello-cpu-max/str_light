@@ -8,6 +8,7 @@
 extern std::vector<uint16_t> T10;
 extern const int BIT_NUM ;
 extern const int GLOBAL_THRESHOLD ;   // 固定全局阈值
+extern const int tau ;
 extern const int CODE_RANGE ; // 1024
 extern const bool USE_INV_PATTERN ;  // true=使用原图+反相图（论文方案）; false=只用原图
 extern const std::string IMG_PREFIX ;

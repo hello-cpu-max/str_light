@@ -120,25 +120,47 @@ vector<Mat> gray_codes_to_patterns(const vector<uint16_t>& codes, int height, in
 }
 
     vector<Mat> patterns;
-    for(int bit = 0; bit < n; bit++)
+
+// ========== 竖直格雷码（u_p）==========
+for(int bit = 0; bit < n; bit++)
+{
+    Mat pat(height, w, CV_8UC1, Scalar(0));
+    Mat pat_inv(height, w, CV_8UC1, Scalar(0));
+    pat.col(0).setTo(0);
+    for(int x = 0; x < w-1; x++)
     {
-        Mat pat(height, w, CV_8UC1, Scalar(0));
-        Mat pat_inv(height, w, CV_8UC1, Scalar(0));
-        pat.col(0).setTo(0);
-        for(int x = 0; x < w-1; x++)
-        {
-            uint8_t val = ((code_at_x[x+1] >> bit) & 1) ? 255 : 0;
-            pat.col(x).setTo(val);
-        }
-        patterns.push_back(pat);
-        for(int x = 0; x < w-1; x++)
-        {
-            uint8_t val = ((code_at_x[x+1] >> bit) & 1) ? 0 : 255;
-            pat_inv.col(x).setTo(val);
-        }
-        patterns.push_back(pat_inv);
-        
+        uint8_t val = ((code_at_x[x+1] >> bit) & 1) ? 255 : 0;
+        pat.col(x).setTo(val);
     }
+    patterns.push_back(pat);
+    for(int x = 0; x < w-1; x++)
+    {
+        uint8_t val = ((code_at_x[x+1] >> bit) & 1) ? 0 : 255;
+        pat_inv.col(x).setTo(val);
+    }
+    patterns.push_back(pat_inv);
+}
+
+// ========== 水平格雷码（v_p）==========
+for(int bit = 0; bit < n; bit++)
+{
+    Mat pat(height, w, CV_8UC1, Scalar(0));
+    Mat pat_inv(height, w, CV_8UC1, Scalar(0));
+    pat.row(0).setTo(0);
+    for(int y = 0; y < height - 1; y++)
+    {
+        uint8_t val = ((code_at_x[(y+1)%912] >> bit) & 1) ? 255 : 0;
+        pat.row(y).setTo(val);
+    }
+    patterns.push_back(pat);
+    for(int y = 0; y < height - 1; y++)
+    {
+        uint8_t val = ((code_at_x[(y+1)%912] >> bit) & 1) ? 0 : 255;
+        pat_inv.row(y).setTo(val);
+    }
+    patterns.push_back(pat_inv);
+}
+cout << "x="  << endl;
     return patterns;
 }
 
