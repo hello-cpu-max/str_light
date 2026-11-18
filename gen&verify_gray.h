@@ -25,6 +25,14 @@ std::vector<uint16_t> gen_gray_by_trans(int n, const std::vector<int>& trans_seq
 std::vector<cv::Mat> gray_codes_to_patterns(const std::vector<uint16_t>& codes, int height, int n);
 uint16_t bin2gray(uint16_t bin) ;
 std::vector<uint16_t> build_enhanced_gray_table();
+float getSubPixValue(const cv::Mat& img, float x, float y);
+cv::Mat decodeGrayCode(const std::vector<cv::Mat>& imgs,
+                       const std::vector<cv::Mat>& imgs_inv,
+                       const std::vector<int>& gray2idx,
+                       int BIT_NUM,
+                       bool USE_INV_PATTERN,
+                       int GLOBAL_THRESHOLD,
+                       int H, int W);
 
 std::vector<int> build_gray2idx(const std::vector<uint16_t>& gray_table);
 cv::Mat read_gray_img(const std::string& path);
