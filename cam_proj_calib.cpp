@@ -132,205 +132,205 @@ bool loadImagesFromDir(const string& dir, vector<cv::Mat>& out_imgs)
     return true;
 }
 
-int main()
-{
-    // ===================== 【参数区，按需修改】 =====================
-    cv::Size board_size(11, 8);
-    float square_size = 15.0f;        // mm
-    const int BIT_NUM = 10;
-    const bool USE_INV_PATTERN = true;
-    const int GLOBAL_THRESHOLD = 60;
+// int main()
+// {
+//     // ===================== 【参数区，按需修改】 =====================
+//     cv::Size board_size(11, 8);
+//     float square_size = 15.0f;        // mm
+//     const int BIT_NUM = 10;
+//     const bool USE_INV_PATTERN = true;
+//     const int GLOBAL_THRESHOLD = 60;
 
-    // 相机分辨率
-    cv::Size cam_img_size(2448, 2048);
-    // DLP（Digital Micromirror Device，数字微镜器件）投影仪分辨率
-    cv::Size proj_img_size(912, 1140);
+//     // 相机分辨率
+//     cv::Size cam_img_size(2448, 2048);
+//     // DLP（Digital Micromirror Device，数字微镜器件）投影仪分辨率
+//     cv::Size proj_img_size(912, 1140);
 
-    string calib_cam_dir = "D:/fpp_project/str_light_gray/calib_img";
-    string gray_lev_dir  = "D:/fpp_project/str_light_gray/gray_lev";
-    string gray_lev_inv_dir = "D:/fpp_project/str_light_gray/gray_lev_inv";
-    string gray_vert_dir = "D:/fpp_project/str_light_gray/gray_vert";
-    string gray_vert_inv_dir = "D:/fpp_project/str_light_gray/gray_vert_inv";
-    string save_yaml_path = "D:/fpp_project/str_light_gray/calib_result.yaml";
-    // =================================================================
+//     string calib_cam_dir = "D:/fpp_project/str_light_gray/calib_img";
+//     string gray_lev_dir  = "D:/fpp_project/str_light_gray/gray_lev";
+//     string gray_lev_inv_dir = "D:/fpp_project/str_light_gray/gray_lev_inv";
+//     string gray_vert_dir = "D:/fpp_project/str_light_gray/gray_vert";
+//     string gray_vert_inv_dir = "D:/fpp_project/str_light_gray/gray_vert_inv";
+//     string save_yaml_path = "D:/fpp_project/str_light_gray/calib_result.yaml";
+//     // =================================================================
 
-    // 1. 生成单张棋盘世界3D点
-    vector<cv::Point3f> board_obj;
-    for (int y = 0; y < board_size.height; y++)
-    {
-        for (int x = 0; x < board_size.width; x++)
-        {
-            board_obj.emplace_back(x * square_size, y * square_size, 0.0f);
-        }
-    }
+//     // 1. 生成单张棋盘世界3D点
+//     vector<cv::Point3f> board_obj;
+//     for (int y = 0; y < board_size.height; y++)
+//     {
+//         for (int x = 0; x < board_size.width; x++)
+//         {
+//             board_obj.emplace_back(x * square_size, y * square_size, 0.0f);
+//         }
+//     }
 
-    // ========== 步骤1：标定相机内参 ==========
-    vector<vector<cv::Point3f>> cam_obj_points;
-    vector<vector<cv::Point2f>> cam_img_points;
-    vector<fs::path> cam_img_paths;
-    for (auto& entry : fs::directory_iterator(calib_cam_dir))
-    {
-        if (!entry.is_regular_file()) continue;
-        cam_img_paths.push_back(entry.path());
-    }
-    sort(cam_img_paths.begin(), cam_img_paths.end());
+//     // ========== 步骤1：标定相机内参 ==========
+//     vector<vector<cv::Point3f>> cam_obj_points;
+//     vector<vector<cv::Point2f>> cam_img_points;
+//     vector<fs::path> cam_img_paths;
+//     for (auto& entry : fs::directory_iterator(calib_cam_dir))
+//     {
+//         if (!entry.is_regular_file()) continue;
+//         cam_img_paths.push_back(entry.path());
+//     }
+//     sort(cam_img_paths.begin(), cam_img_paths.end());
 
-    for (auto& p : cam_img_paths)
-    {
-        cv::Mat img = cv::imread(p.string());
-        if (img.empty()) continue;
-        cv::Mat gray;
-        cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
-        vector<cv::Point2f> corners;
-        bool ok = cv::findChessboardCorners(gray, board_size, corners,
-            cv::CALIB_CB_ADAPTIVE_THRESH + cv::CALIB_CB_NORMALIZE_IMAGE + cv::CALIB_CB_FAST_CHECK);
-        if (!ok)
-        {
-            cout << p.filename() << " 角点检测失败，跳过\n";
-            continue;
-        }
-        cv::cornerSubPix(gray, corners, cv::Size(11, 11), cv::Size(-1, -1),
-            cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::MAX_ITER, 30, 0.001));
-        cam_obj_points.push_back(board_obj);
-        cam_img_points.push_back(corners);
-    }
-    if (cam_obj_points.empty())
-    {
-        cerr << "【相机标定】没有有效标定图！\n";
-        return -1;
-    }
-    cv::Mat Kc, Dc;
-    vector<cv::Mat> rvecs_c, tvecs_c;
-    double cam_rms = cv::calibrateCamera(cam_obj_points, cam_img_points, cam_img_size, Kc, Dc, rvecs_c, tvecs_c);
-    cout << "\n===== 相机标定结果 =====\n";
-    cout << "相机RMS：" << cam_rms << endl;
-    cout << "Kc:\n" << Kc << endl;
-    cout << "Dc:\n" << Dc << endl;
+//     for (auto& p : cam_img_paths)
+//     {
+//         cv::Mat img = cv::imread(p.string());
+//         if (img.empty()) continue;
+//         cv::Mat gray;
+//         cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
+//         vector<cv::Point2f> corners;
+//         bool ok = cv::findChessboardCorners(gray, board_size, corners,
+//             cv::CALIB_CB_ADAPTIVE_THRESH + cv::CALIB_CB_NORMALIZE_IMAGE + cv::CALIB_CB_FAST_CHECK);
+//         if (!ok)
+//         {
+//             cout << p.filename() << " 角点检测失败，跳过\n";
+//             continue;
+//         }
+//         cv::cornerSubPix(gray, corners, cv::Size(11, 11), cv::Size(-1, -1),
+//             cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::MAX_ITER, 30, 0.001));
+//         cam_obj_points.push_back(board_obj);
+//         cam_img_points.push_back(corners);
+//     }
+//     if (cam_obj_points.empty())
+//     {
+//         cerr << "【相机标定】没有有效标定图！\n";
+//         return -1;
+//     }
+//     cv::Mat Kc, Dc;
+//     vector<cv::Mat> rvecs_c, tvecs_c;
+//     double cam_rms = cv::calibrateCamera(cam_obj_points, cam_img_points, cam_img_size, Kc, Dc, rvecs_c, tvecs_c);
+//     cout << "\n===== 相机标定结果 =====\n";
+//     cout << "相机RMS：" << cam_rms << endl;
+//     cout << "Kc:\n" << Kc << endl;
+//     cout << "Dc:\n" << Dc << endl;
 
-    // ========== 步骤2：加载格雷码图像，解码，收集投影仪标定数据 ==========
-    vector<cv::Mat> imgs_lev, imgs_lev_inv;
-    vector<cv::Mat> imgs_vert, imgs_vert_inv;
-    if (!loadImagesFromDir(gray_lev_dir, imgs_lev)
-        || !loadImagesFromDir(gray_lev_inv_dir, imgs_lev_inv)
-        || !loadImagesFromDir(gray_vert_dir, imgs_vert)
-        || !loadImagesFromDir(gray_vert_inv_dir, imgs_vert_inv))
-    {
-        cerr << "格雷码图像加载失败！检查路径\n";
-        return -1;
-    }
-    int H = imgs_lev[0].rows;
-    int W = imgs_lev[0].cols;
+//     // ========== 步骤2：加载格雷码图像，解码，收集投影仪标定数据 ==========
+//     vector<cv::Mat> imgs_lev, imgs_lev_inv;
+//     vector<cv::Mat> imgs_vert, imgs_vert_inv;
+//     if (!loadImagesFromDir(gray_lev_dir, imgs_lev)
+//         || !loadImagesFromDir(gray_lev_inv_dir, imgs_lev_inv)
+//         || !loadImagesFromDir(gray_vert_dir, imgs_vert)
+//         || !loadImagesFromDir(gray_vert_inv_dir, imgs_vert_inv))
+//     {
+//         cerr << "格雷码图像加载失败！检查路径\n";
+//         return -1;
+//     }
+//     int H = imgs_lev[0].rows;
+//     int W = imgs_lev[0].cols;
 
-    auto gray_table = build_enhanced_gray_table();
-    auto gray2idx = build_gray2idx(gray_table);
+//     auto gray_table = build_enhanced_gray_table();
+//     auto gray2idx = build_gray2idx(gray_table);
 
-    // 【重点】gray2idx 格雷码→十进制映射表，你自己生成格雷码序列后填入
+//     // 【重点】gray2idx 格雷码→十进制映射表，你自己生成格雷码序列后填入
 
 
-    vector<vector<cv::Point3f>> proj_obj_points;
-    vector<vector<cv::Point2f>> proj_img_points;
-    vector<vector<cv::Point2f>> stereo_cam_points;
+//     vector<vector<cv::Point3f>> proj_obj_points;
+//     vector<vector<cv::Point2f>> proj_img_points;
+//     vector<vector<cv::Point2f>> stereo_cam_points;
 
-    // 逐姿态解码：每一组格雷码对应棋盘一个姿态
-    int frame_cnt = imgs_lev.size() / BIT_NUM;
-    for (int f = 0; f < frame_cnt; f++)
-    {
-        // 取出当前帧对应的 BIT_NUM 张正、反水平图案
-        vector<cv::Mat> lev_f, lev_inv_f;
-        vector<cv::Mat> vert_f, vert_inv_f;
-        for (int b = 0; b < BIT_NUM; b++)
-        {
-            lev_f.push_back(imgs_lev[f * BIT_NUM + b]);
-            lev_inv_f.push_back(imgs_lev_inv[f * BIT_NUM + b]);
-            vert_f.push_back(imgs_vert[f * BIT_NUM + b]);
-            vert_inv_f.push_back(imgs_vert_inv[f * BIT_NUM + b]);
-        }
-        cv::Mat idx_lev = decodeGrayCode(lev_f, lev_inv_f, gray2idx, BIT_NUM, USE_INV_PATTERN, GLOBAL_THRESHOLD, H, W);
-        cv::Mat idx_vert = decodeGrayCode(vert_f, vert_inv_f, gray2idx, BIT_NUM, USE_INV_PATTERN, GLOBAL_THRESHOLD, H, W);
+//     // 逐姿态解码：每一组格雷码对应棋盘一个姿态
+//     int frame_cnt = imgs_lev.size() / BIT_NUM;
+//     for (int f = 0; f < frame_cnt; f++)
+//     {
+//         // 取出当前帧对应的 BIT_NUM 张正、反水平图案
+//         vector<cv::Mat> lev_f, lev_inv_f;
+//         vector<cv::Mat> vert_f, vert_inv_f;
+//         for (int b = 0; b < BIT_NUM; b++)
+//         {
+//             lev_f.push_back(imgs_lev[f * BIT_NUM + b]);
+//             lev_inv_f.push_back(imgs_lev_inv[f * BIT_NUM + b]);
+//             vert_f.push_back(imgs_vert[f * BIT_NUM + b]);
+//             vert_inv_f.push_back(imgs_vert_inv[f * BIT_NUM + b]);
+//         }
+//         cv::Mat idx_lev = decodeGrayCode(lev_f, lev_inv_f, gray2idx, BIT_NUM, USE_INV_PATTERN, GLOBAL_THRESHOLD, H, W);
+//         cv::Mat idx_vert = decodeGrayCode(vert_f, vert_inv_f, gray2idx, BIT_NUM, USE_INV_PATTERN, GLOBAL_THRESHOLD, H, W);
 
-        // 读取该姿态对应的相机原图，检测棋盘角点
-        cv::Mat cam_gray = cv::imread(cam_img_paths[f].string(), cv::IMREAD_GRAYSCALE);
-        vector<cv::Point2f> corners_cam;
-        bool found = cv::findChessboardCorners(cam_gray, board_size, corners_cam,
-            cv::CALIB_CB_ADAPTIVE_THRESH + cv::CALIB_CB_NORMALIZE_IMAGE + cv::CALIB_CB_FAST_CHECK);
-        if (!found)
-        {
-            cout << "第" << f << "组格雷码：相机角点检测失败，跳过\n";
-            continue;
-        }
-        cv::cornerSubPix(cam_gray, corners_cam, cv::Size(11,11), cv::Size(-1,-1),
-            cv::TermCriteria(cv::TermCriteria::EPS+cv::TermCriteria::MAX_ITER,30,0.001));
+//         // 读取该姿态对应的相机原图，检测棋盘角点
+//         cv::Mat cam_gray = cv::imread(cam_img_paths[f].string(), cv::IMREAD_GRAYSCALE);
+//         vector<cv::Point2f> corners_cam;
+//         bool found = cv::findChessboardCorners(cam_gray, board_size, corners_cam,
+//             cv::CALIB_CB_ADAPTIVE_THRESH + cv::CALIB_CB_NORMALIZE_IMAGE + cv::CALIB_CB_FAST_CHECK);
+//         if (!found)
+//         {
+//             cout << "第" << f << "组格雷码：相机角点检测失败，跳过\n";
+//             continue;
+//         }
+//         cv::cornerSubPix(cam_gray, corners_cam, cv::Size(11,11), cv::Size(-1,-1),
+//             cv::TermCriteria(cv::TermCriteria::EPS+cv::TermCriteria::MAX_ITER,30,0.001));
 
-        vector<cv::Point2f> corners_proj;
-        bool all_valid = true;
-        for (auto& p : corners_cam)
-        {
-            float u_proj = getSubPixValue(idx_lev, p.x, p.y);
-            float v_proj = getSubPixValue(idx_vert, p.x, p.y);
-            if (u_proj < 0 || v_proj < 0)
-            {
-                all_valid = false;
-                break;
-            }
-            corners_proj.emplace_back(u_proj, v_proj);
-        }
-        if (!all_valid)
-        {
-            cout << "第" << f << "组格雷码：存在解码无效点，跳过\n";
-            continue;
-        }
-        proj_obj_points.push_back(board_obj);
-        proj_img_points.push_back(corners_proj);
-        stereo_cam_points.push_back(corners_cam);
-    }
-    if (proj_obj_points.empty())
-    {
-        cerr << "【投影仪标定】没有有效解码点组！\n";
-        return -1;
-    }
+//         vector<cv::Point2f> corners_proj;
+//         bool all_valid = true;
+//         for (auto& p : corners_cam)
+//         {
+//             float u_proj = getSubPixValue(idx_lev, p.x, p.y);
+//             float v_proj = getSubPixValue(idx_vert, p.x, p.y);
+//             if (u_proj < 0 || v_proj < 0)
+//             {
+//                 all_valid = false;
+//                 break;
+//             }
+//             corners_proj.emplace_back(u_proj, v_proj);
+//         }
+//         if (!all_valid)
+//         {
+//             cout << "第" << f << "组格雷码：存在解码无效点，跳过\n";
+//             continue;
+//         }
+//         proj_obj_points.push_back(board_obj);
+//         proj_img_points.push_back(corners_proj);
+//         stereo_cam_points.push_back(corners_cam);
+//     }
+//     if (proj_obj_points.empty())
+//     {
+//         cerr << "【投影仪标定】没有有效解码点组！\n";
+//         return -1;
+//     }
 
-    // ========== 步骤3：标定投影仪内参（把投影仪当成相机） ==========
-    cv::Mat Kp, Dp;
-    vector<cv::Mat> rvecs_p, tvecs_p;
-    double proj_rms = cv::calibrateCamera(proj_obj_points, proj_img_points, proj_img_size, Kp, Dp, rvecs_p, tvecs_p);
-    cout << "\n===== 投影仪标定结果 =====\n";
-    cout << "投影仪RMS：" << proj_rms << endl;
-    cout << "Kp:\n" << Kp << endl;
-    cout << "Dp:\n" << Dp << endl;
+//     // ========== 步骤3：标定投影仪内参（把投影仪当成相机） ==========
+//     cv::Mat Kp, Dp;
+//     vector<cv::Mat> rvecs_p, tvecs_p;
+//     double proj_rms = cv::calibrateCamera(proj_obj_points, proj_img_points, proj_img_size, Kp, Dp, rvecs_p, tvecs_p);
+//     cout << "\n===== 投影仪标定结果 =====\n";
+//     cout << "投影仪RMS：" << proj_rms << endl;
+//     cout << "Kp:\n" << Kp << endl;
+//     cout << "Dp:\n" << Dp << endl;
 
-    // ========== 步骤4：stereoCalibrate 固定内参，求解相机-投影仪外参 R T ==========
-    cv::Mat R, T, E, F;
-    double stereo_rms = cv::stereoCalibrate(
-        proj_obj_points,
-        stereo_cam_points,
-        proj_img_points,
-        Kc, Dc,
-        Kp, Dp,
-        cam_img_size,
-        R, T, E, F,
-        cv::CALIB_FIX_INTRINSIC,
-        cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::MAX_ITER, 100, 1e-6)
-    );
-    cout << "\n===== 立体标定（相机-投影仪）结果 =====\n";
-    cout << "立体标定RMS：" << stereo_rms << endl;
-    cout << "旋转矩阵 R：\n" << R << endl;
-    cout << "平移向量 T：\n" << T << endl;
+//     // ========== 步骤4：stereoCalibrate 固定内参，求解相机-投影仪外参 R T ==========
+//     cv::Mat R, T, E, F;
+//     double stereo_rms = cv::stereoCalibrate(
+//         proj_obj_points,
+//         stereo_cam_points,
+//         proj_img_points,
+//         Kc, Dc,
+//         Kp, Dp,
+//         cam_img_size,
+//         R, T, E, F,
+//         cv::CALIB_FIX_INTRINSIC,
+//         cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::MAX_ITER, 100, 1e-6)
+//     );
+//     cout << "\n===== 立体标定（相机-投影仪）结果 =====\n";
+//     cout << "立体标定RMS：" << stereo_rms << endl;
+//     cout << "旋转矩阵 R：\n" << R << endl;
+//     cout << "平移向量 T：\n" << T << endl;
 
-    // ========== 步骤5：全部参数写入YAML ==========
-    cv::FileStorage fs(save_yaml_path, cv::FileStorage::WRITE);
-    fs << "camera_matrix" << Kc;
-    fs << "dist_coeffs" << Dc;
-    fs << "proj_matrix" << Kp;
-    fs << "proj_dist_coeffs" << Dp;
-    fs << "R" << R;
-    fs << "T" << T;
-    fs << "cam_image_size" << cam_img_size;
-    fs << "proj_image_size" << proj_img_size;
-    fs << "cam_rms" << cam_rms;
-    fs << "proj_rms" << proj_rms;
-    fs << "stereo_rms" << stereo_rms;
-    fs.release();
-    cout << "\n全部标定参数保存至：" << save_yaml_path << endl;
+//     // ========== 步骤5：全部参数写入YAML ==========
+//     cv::FileStorage fs(save_yaml_path, cv::FileStorage::WRITE);
+//     fs << "camera_matrix" << Kc;
+//     fs << "dist_coeffs" << Dc;
+//     fs << "proj_matrix" << Kp;
+//     fs << "proj_dist_coeffs" << Dp;
+//     fs << "R" << R;
+//     fs << "T" << T;
+//     fs << "cam_image_size" << cam_img_size;
+//     fs << "proj_image_size" << proj_img_size;
+//     fs << "cam_rms" << cam_rms;
+//     fs << "proj_rms" << proj_rms;
+//     fs << "stereo_rms" << stereo_rms;
+//     fs.release();
+//     cout << "\n全部标定参数保存至：" << save_yaml_path << endl;
 
-    return 0;
-}
+//     return 0;
+// }
