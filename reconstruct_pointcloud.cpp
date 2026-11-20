@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <string>
 #include <fstream>
-#include "gen&verify_gray.h"
+#include "gray.h"
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -68,6 +68,8 @@ bool runCalibration(
     vector<vector<cv::Point3f>> cam_obj_points;
     vector<vector<cv::Point2f>> cam_img_points;
     vector<fs::path> cam_img_paths;
+    vector<fs::path> cam_valid_paths;
+
     for (auto& entry : fs::directory_iterator(calib_cam_dir))
     {
         if (!entry.is_regular_file()) continue;
@@ -93,6 +95,7 @@ bool runCalibration(
             cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::MAX_ITER, 30, 0.001));
         cam_obj_points.push_back(board_obj);
         cam_img_points.push_back(corners);
+        cam_valid_paths.push_back(p);
     }
     if (cam_obj_points.empty())
     {
@@ -102,6 +105,110 @@ bool runCalibration(
     cv::Mat Kc, Dc;
     vector<cv::Mat> rvecs_c, tvecs_c;
     double cam_rms = cv::calibrateCamera(cam_obj_points, cam_img_points, cam_img_size, Kc, Dc, rvecs_c, tvecs_c);
+    // ========== 相机标定后重投影误差计算与可视化 ==========
+
+cout << "\n===== 相机重投影误差分析 =====\n";
+
+double total_error = 0.0;
+double total_error_sq = 0.0;
+int total_points = 0;
+
+// 创建重投影结果保存目录
+string reproj_dir = "D:/fpp_project/str_light_gray/reprojection";
+fs::create_directories(reproj_dir);
+
+for (int i = 0; i < cam_obj_points.size(); i++)
+{
+    // 1. 根据标定参数，将三维棋盘格角点重投影到图像平面
+    vector<cv::Point2f> reprojected_points;
+
+    cv::projectPoints(
+        cam_obj_points[i],
+        rvecs_c[i],
+        tvecs_c[i],
+        Kc,
+        Dc,
+        reprojected_points
+    );
+
+    // 2. 计算当前标定图片的重投影误差
+    double error = 0.0;
+    double error_sq = 0.0;
+
+    for (int j = 0; j < cam_img_points[i].size(); j++)
+    {
+        double dx = cam_img_points[i][j].x
+                  - reprojected_points[j].x;
+
+        double dy = cam_img_points[i][j].y
+                  - reprojected_points[j].y;
+
+        double e = sqrt(dx * dx + dy * dy);
+
+        error += e;
+        error_sq += e * e;
+    }
+
+    double mean_error = error / cam_img_points[i].size();
+
+    total_error += error;
+    total_error_sq += error_sq;
+    total_points += cam_img_points[i].size();
+
+    cout << "第 " << i + 1 << " 张标定图片："
+         << "平均重投影误差 = "
+         << mean_error << " pixel" << endl;
+
+    // 3. 读取原始标定图片
+    cv::Mat img = cv::imread(cam_valid_paths[i].string());
+
+    if (img.empty())
+        continue;
+
+    // 4. 绘制实际检测角点与重投影角点
+    for (int j = 0; j < cam_img_points[i].size(); j++)
+    {
+        cv::Point2f observed = cam_img_points[i][j];
+        cv::Point2f projected = reprojected_points[j];
+
+        // 绿色：实际检测到的角点
+        cv::circle(img, observed, 4,
+                   cv::Scalar(0, 255, 0), -1);
+
+        // 红色：重投影得到的角点
+        cv::circle(img, projected, 3,
+                   cv::Scalar(0, 0, 255), -1);
+
+        // 蓝色线段：两者之间的偏差
+        cv::line(img, observed, projected,
+                 cv::Scalar(255, 0, 0), 1);
+    }
+
+    // 5. 保存重投影可视化图片
+    string save_path = reproj_dir + "/reproj_"
+                     + to_string(i + 1) + ".jpg";
+
+    cv::imwrite(save_path, img);
+}
+
+// 6. 计算整体平均重投影误差和RMS误差
+double mean_reproj_error = total_error / total_points;
+
+double rms_reproj_error =
+    sqrt(total_error_sq / total_points);
+
+cout << "\n相机标定RMS（calibrateCamera）："
+     << cam_rms << " pixel" << endl;
+
+cout << "整体平均重投影误差："
+     << mean_reproj_error << " pixel" << endl;
+
+cout << "整体重投影RMS误差："
+     << rms_reproj_error << " pixel" << endl;
+
+cout << "重投影可视化图片保存至："
+     << reproj_dir << endl;
+
     cout << "\n===== 相机标定结果 =====\n";
     cout << "相机RMS：" << cam_rms << endl;
     cout << "Kc:\n" << Kc << endl;
@@ -127,6 +234,7 @@ bool runCalibration(
     vector<vector<cv::Point3f>> proj_obj_points;
     vector<vector<cv::Point2f>> proj_img_points;
     vector<vector<cv::Point2f>> stereo_cam_points;
+    
 
     int frame_cnt = imgs_lev.size() / BIT_NUM;
     // 校验：棋盘姿态数量必须等于格雷码组数量
@@ -286,6 +394,8 @@ bool runRecon(
     vector<int> gray2idx;
     gray2idx.resize(1 << BIT_NUM, -1);
     // for(int i=0; i<(1<<BIT_NUM); i++) gray2idx[gray_code[i]] = i;
+    auto gray_table = build_enhanced_gray_table();
+    gray2idx = build_gray2idx(gray_table);
 
     // 3. 解码水平、垂直索引图
     cv::Mat idx_lev  = decodeGrayCode(lev, lev_inv, gray2idx, BIT_NUM, USE_INV_PATTERN, GLOBAL_THRESHOLD, H_recon, W_recon);
@@ -347,7 +457,7 @@ int main()
     const bool USE_INV_PATTERN = true;
     const int GLOBAL_THRESHOLD = 60;
     cv::Size board_size(11, 8);
-    float square_size = 15.0f;
+    float square_size = 20.0f;
     cv::Size cam_img_size(2448, 2048);
     cv::Size proj_img_size(912, 1140);
 

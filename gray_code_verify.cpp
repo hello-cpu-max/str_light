@@ -5,7 +5,7 @@
 // #include <string>
 // #include <cmath>
 // #include <bitset>
-#include "gen&verify_gray.h"
+#include "gray.h"
 
 //=============================================
 // 配置区，和你的10bit增强格雷码论文对齐

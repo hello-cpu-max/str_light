@@ -3,7 +3,7 @@
 #include <iostream>
 #include <filesystem>
 #include <string>
-#include "gen&verify_gray.h"
+#include "gray.h"
 
 namespace fs = std::filesystem;
 using namespace std;

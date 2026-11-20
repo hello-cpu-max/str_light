@@ -3,7 +3,7 @@
 // #include <bitset>
 // #include <opencv2/opencv.hpp>
 
-#include "gen&verify_gray.h"
+#include "gray.h"
 
 using namespace std;
 using namespace cv;
@@ -103,12 +103,12 @@ vector<uint16_t> gen_gray_by_trans(int n, const vector<int>& trans_seq)
 vector<Mat> gray_codes_to_patterns(const vector<uint16_t>& codes, int height, int n)
 {
     int w = 912;
-    vector<uint16_t> code_at_x(w, 0);
+    vector<uint16_t> code_at_x(1024, 0);
     uint16_t curr = 0;
     code_at_x[0] = curr;   // x=0 初始码字0，全黑
     
     
-    for(int x = 0; x < w; x++)
+    for(int x = 0; x < 1024; x++)
     {
         curr ^= (1U << codes[x % codes.size()]);
         code_at_x[x] = curr;
@@ -116,7 +116,7 @@ vector<Mat> gray_codes_to_patterns(const vector<uint16_t>& codes, int height, in
 
     for(int x = 0; x < code_at_x.size(); x++)
 {
-    cout << "x=" << x << " , code = " << code_at_x[x] << " , binary = " << bitset<7>(code_at_x[x]) << endl;
+    cout << "x=" << x << " , code = " << code_at_x[x] << " , binary = " << bitset<10>(code_at_x[x]) << endl;
 }
 
     vector<Mat> patterns;
@@ -127,16 +127,17 @@ for(int bit = 0; bit < n; bit++)
     Mat pat(height, w, CV_8UC1, Scalar(0));
     Mat pat_inv(height, w, CV_8UC1, Scalar(0));
     pat.col(0).setTo(0);
+    pat_inv.col(0).setTo(255);
     for(int x = 0; x < w-1; x++)
     {
-        uint8_t val = ((code_at_x[x+1] >> bit) & 1) ? 255 : 0;
-        pat.col(x).setTo(val);
+        uint8_t val = ((code_at_x[x] >> bit) & 1) ? 255 : 0;
+        pat.col(x+1).setTo(val);
     }
     patterns.push_back(pat);
     for(int x = 0; x < w-1; x++)
     {
-        uint8_t val = ((code_at_x[x+1] >> bit) & 1) ? 0 : 255;
-        pat_inv.col(x).setTo(val);
+        uint8_t val = ((code_at_x[x] >> bit) & 1) ? 0 : 255;
+        pat_inv.col(x+1).setTo(val);
     }
     patterns.push_back(pat_inv);
 }
@@ -147,16 +148,17 @@ for(int bit = 0; bit < n; bit++)
     Mat pat(height, w, CV_8UC1, Scalar(0));
     Mat pat_inv(height, w, CV_8UC1, Scalar(0));
     pat.row(0).setTo(0);
+    pat_inv.row(0).setTo(255);
     for(int y = 0; y < height - 1; y++)
     {
-        uint8_t val = ((code_at_x[(y+1)%912] >> bit) & 1) ? 255 : 0;
-        pat.row(y).setTo(val);
+        uint8_t val = ((code_at_x[(y)%1024] >> bit) & 1) ? 255 : 0;
+        pat.row(y+1).setTo(val);
     }
     patterns.push_back(pat);
     for(int y = 0; y < height - 1; y++)
     {
-        uint8_t val = ((code_at_x[(y+1)%912] >> bit) & 1) ? 0 : 255;
-        pat_inv.row(y).setTo(val);
+        uint8_t val = ((code_at_x[(y)%1024] >> bit) & 1) ? 0 : 255;
+        pat_inv.row(y+1).setTo(val);
     }
     patterns.push_back(pat_inv);
 }
